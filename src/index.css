@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* https://coolors.co/cfdbd5-dce4da-e8eddf-f5cb5c-242423-333533 */
+
+@theme {
+    --color-background: #E8EDDF;
+    --color-accent: #DCE4DA;
+    --color-text: #242423;
+    --color-slate: #333533;
+    --color-primary: #F5CB5C;
+    --color-footer: #CFDBD5;
+}
