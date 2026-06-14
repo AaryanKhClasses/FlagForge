@@ -6,7 +6,8 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:local="clr-namespace:FlagForgeHost"
         mc:Ignorable="d"
-        Title="FlagForge" WindowState="Maximized">
+        ResizeMode="CanMinimize"
+        Title="FlagForge" Height="640" Width="880">
     <Grid>
         <wv2:WebView2 x:Name="WebView" />
     </Grid>

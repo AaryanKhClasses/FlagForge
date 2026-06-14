@@ -1,13 +1,13 @@
 import { createHashRouter } from 'react-router-dom'
 import RootLayout from './root'
-import Home from './routes/home'
+import Launcher from './routes/launcher'
 
 export const router = createHashRouter([
     {
         path: '/',
         element: <RootLayout />,
         children: [
-            { index: true, element: <Home /> }
+            { index: true, element: <Launcher /> }
         ]
     }
 ])
