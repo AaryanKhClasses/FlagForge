@@ -35,6 +35,9 @@ public partial class MainWindow : Window
         {
             case "pickFolder": PickFolder(); break;
             case "createWorkspace": CreateWorkspace(root); break;
+            case "openWorkspace": OpenWorkspace(); break;
+            case "maximizeWindow": WindowState = WindowState.Maximized; ResizeMode = ResizeMode.CanResize; break;
+            case "restoreWindow": WindowState = WindowState.Normal; ResizeMode = ResizeMode.CanMinimize; break;
         }
     }
 
@@ -76,11 +79,11 @@ public partial class MainWindow : Window
             return;
         }
         Directory.CreateDirectory(workspacePath);
-        Directory.CreateDirectory(Path.Combine(workspacePath, "projects"));
 
         var workspaceJson = JsonSerializer.Serialize(new
         {
             name,
+            location,
             version = 1,
             createdAt = DateTime.UtcNow
         }, new JsonSerializerOptions { WriteIndented = true, IndentSize = 4 });
@@ -90,6 +93,26 @@ public partial class MainWindow : Window
         {
             type = "createWorkspaceResult",
             path = workspacePath
+        });
+    }
+
+    private void OpenWorkspace()
+    {
+        var dialog = new OpenFileDialog()
+        {
+            Title = "Open Workspace",
+            AddExtension = true,
+            Filter = "Workspace Files|workspace.json",
+        };
+        if (dialog.ShowDialog() != true) return;
+        var path = dialog.FileName;
+
+        if (!File.Exists(path)) return;
+        var workspaceJson = File.ReadAllText(path);
+        SendMessage(new
+        {
+            type = "openWorkspaceResult",
+            workspace = JsonSerializer.Deserialize<JsonElement>(workspaceJson)
         });
     }
 }

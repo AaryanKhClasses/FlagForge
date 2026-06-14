@@ -1,9 +1,4 @@
 export async function pickFolder(): Promise<string | null> {
-    if(!window.chrome?.webview) {
-        console.warn("Not running in a WebView environment. pickFolder will not work.");
-        return null;
-    }
-
     return new Promise((resolve) => {
         const handler = (event: MessageEvent) => {
             const data = event.data
@@ -34,4 +29,27 @@ export async function createWorkspace(name: string, location: string): Promise<s
             payload: { name, location }
         })
     })
+}
+
+export async function openWorkspace(): Promise<any> {
+    return new Promise((resolve) => {
+        const handler = (event: MessageEvent) => {
+            const data = event.data
+            if(data.type === "openWorkspaceResult") {
+                window.chrome?.webview?.removeEventListener("message", handler)
+                resolve(data.workspace)
+            }
+        }
+
+        window.chrome?.webview?.addEventListener("message", handler)
+        window.chrome?.webview?.postMessage({ type: "openWorkspace" })
+    })
+}
+
+export async function maximizeWindow(): Promise<void> {
+    window.chrome?.webview?.postMessage({ type: "maximizeWindow" })
+}
+
+export async function restoreWindow(): Promise<void> {
+    window.chrome?.webview?.postMessage({ type: "restoreWindow" })
 }
