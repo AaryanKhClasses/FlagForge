@@ -50,6 +50,7 @@ public partial class MainWindow : Window
             case "openRecentWorkspace" : OpenRecentWorkspace(root); break;
             case "loadChallenges": LoadChallenges(root); break;
             case "createChallenge": CreateChallenge(root); break;
+            case "updateChallenge": UpdateChallenge(root); break;
 
             case "minimizeWindow": WindowState = WindowState.Minimized; break;
             case "closeWindow": Close(); break;
@@ -62,29 +63,143 @@ public partial class MainWindow : Window
         WebView.CoreWebView2.PostWebMessageAsJson(json);
     }
 
+    private static string GetRecentWorkspacesPath()
+    {
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        if (!Directory.Exists(Path.Combine(appData, "FlagForge"))) Directory.CreateDirectory(Path.Combine(appData, "FlagForge"));
+        var recentPath = Path.Combine(appData, "FlagForge", "recent.json");
+        if (!File.Exists(recentPath)) File.WriteAllText(recentPath, "[]");
+        return recentPath;
+    }
+
+    private static List<Workspace> ReadRecentWorkspaces()
+    {
+        var recentPath = GetRecentWorkspacesPath();
+        var recentJson = File.ReadAllText(recentPath);
+        return JsonSerializer.Deserialize<List<Workspace>>(recentJson, JsonOptions) ?? [];
+    }
+
+    private static void SaveRecentWorkspaces(List<Workspace> recentWorkspaces)
+    {
+        var recentPath = GetRecentWorkspacesPath();
+        File.WriteAllText(recentPath, JsonSerializer.Serialize(recentWorkspaces, JsonOptions));
+    }
+
+    private static string GetWorkspacePath(Workspace workspace)
+    {
+        return Path.Combine(workspace.Path, workspace.Name);
+    }
+
+    private static bool WorkspacePathsMatch(Workspace left, Workspace right)
+    {
+        return StringComparer.OrdinalIgnoreCase.Equals(GetWorkspacePath(left), GetWorkspacePath(right));
+    }
+
+    private static bool HasInvalidChallengeTitle(string title)
+    {
+        return title.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0;
+    }
+
+    private static string GetChallengesRoot(string workspacePath)
+    {
+        return Path.Combine(workspacePath, "challenges");
+    }
+
+    private static string? FindChallengeFile(string workspacePath, Guid challengeId)
+    {
+        var challengesRoot = GetChallengesRoot(workspacePath);
+        if (!Directory.Exists(challengesRoot)) return null;
+
+        foreach (var file in Directory.GetFiles(challengesRoot, "challenge.json", SearchOption.AllDirectories))
+        {
+            var challengeJson = File.ReadAllText(file);
+            var challenge = JsonSerializer.Deserialize<Challenge>(challengeJson, JsonOptions);
+            if (challenge?.Id == challengeId) return file;
+        }
+
+        return null;
+    }
+
+    private static Challenge? ReadChallengeFile(string challengeFilePath)
+    {
+        if (!File.Exists(challengeFilePath)) return null;
+
+        var challengeJson = File.ReadAllText(challengeFilePath);
+        return JsonSerializer.Deserialize<Challenge>(challengeJson, JsonOptions);
+    }
+
+    private static List<Challenge> ReadChallenges(string workspacePath)
+    {
+        var challengesRoot = GetChallengesRoot(workspacePath);
+        if (!Directory.Exists(challengesRoot)) return [];
+
+        var challengeFiles = Directory.GetFiles(challengesRoot, "challenge.json", SearchOption.AllDirectories);
+        var challenges = new List<Challenge>();
+
+        foreach (var file in challengeFiles)
+        {
+            var challenge = ReadChallengeFile(file);
+            if (challenge != null) challenges.Add(challenge);
+        }
+
+        return challenges;
+    }
+
+    private static object ToChallengePayload(Challenge challenge)
+    {
+        return new
+        {
+            id = challenge.Id,
+            title = challenge.Title,
+            description = challenge.Description,
+            tags = challenge.Tags,
+            solution = challenge.Solution,
+            flag = challenge.Flag,
+            createdAt = challenge.CreatedAt,
+            updatedAt = challenge.UpdatedAt
+        };
+    }
+
+    private void SendChallengeResult(string type, Challenge challenge)
+    {
+        SendMessage(new
+        {
+            type,
+            data = ToChallengePayload(challenge)
+        });
+    }
+
+    private static List<Workspace> NormalizeRecentWorkspaces(IEnumerable<Workspace> recentWorkspaces)
+    {
+        var normalized = new List<Workspace>();
+
+        foreach (var workspace in recentWorkspaces)
+        {
+            normalized.RemoveAll(existing => WorkspacePathsMatch(existing, workspace));
+            normalized.Add(workspace);
+        }
+
+        return normalized;
+    }
+
+    private static void UpsertRecentWorkspace(Workspace workspace)
+    {
+        var recentWorkspaces = NormalizeRecentWorkspaces(ReadRecentWorkspaces());
+        recentWorkspaces.RemoveAll(existing => WorkspacePathsMatch(existing, workspace));
+        recentWorkspaces.Add(workspace);
+        SaveRecentWorkspaces(recentWorkspaces);
+    }
+
     private void PickFolder()
     {
-        var dialog = new OpenFolderDialog()
-        {
-            Title = "Select Workspace Location"
-        };
-
+        var dialog = new OpenFolderDialog() { Title = "Select Workspace Location" };
         if (dialog.ShowDialog() != true) return;
 
         SendMessage(new
         {
             type = "pickFolderResult",
-            path = dialog.FolderName
+            data = dialog.FolderName
         });
-    }
-
-    private string GetRecentWorkspacesPath()
-    {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        if(!Directory.Exists(Path.Combine(appData, "FlagForge"))) Directory.CreateDirectory(Path.Combine(appData, "FlagForge"));
-        var recentPath = Path.Combine(appData, "FlagForge", "recent.json");
-        if (!File.Exists(recentPath)) File.WriteAllText(recentPath, "[]");
-        return recentPath;
     }
 
     private void LoadRecentWorkspaces() {
@@ -95,15 +210,14 @@ public partial class MainWindow : Window
         {
             id = w.Id,
             name = w.Name,
-            location = w.Location,
-            path = Path.Combine(w.Location, w.Name),
+            path = w.Path,
             updatedAt = w.UpdatedAt
         }).ToArray();
 
         SendMessage(new
         {
             type = "loadRecentWorkspacesResult",
-            workspaces = workspaceObjs
+            data = workspaceObjs
         });
     }
 
@@ -111,10 +225,9 @@ public partial class MainWindow : Window
     {
         var payload = root.GetProperty("payload");
         var name = payload.GetProperty("name").GetString()!;
-        var location = payload.GetProperty("location").GetString()!;
+        var path = payload.GetProperty("path").GetString()!;
 
-        var workspacePath = Path.Combine(location, name);
-        if (Directory.Exists(workspacePath))
+        if (Directory.Exists(path))
         {
             SendMessage(new
             {
@@ -123,27 +236,27 @@ public partial class MainWindow : Window
             });
             return;
         }
-        Directory.CreateDirectory(workspacePath);
+        Directory.CreateDirectory(path);
 
         var workspace = new Workspace
         {
             Id = Guid.NewGuid(),
             Name = name,
-            Location = location,
+            Path = path,
             Version = 1,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
         
         var workspaceJson = JsonSerializer.Serialize(workspace, JsonOptions);
-        File.WriteAllText(Path.Combine(workspacePath, "workspace.json"), workspaceJson);
+        File.WriteAllText(Path.Combine(path, "workspace.json"), workspaceJson);
 
         UpsertRecentWorkspace(workspace);
 
         SendMessage(new
         {
             type = "createWorkspaceResult",
-            path = workspacePath
+            data = path
         });
     }
 
@@ -170,7 +283,7 @@ public partial class MainWindow : Window
         SendMessage(new
         {
             type = "openWorkspaceResult",
-            workspace = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(workspace, JsonOptions))
+            data = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(workspace, JsonOptions))
         });
     }
 
@@ -178,9 +291,7 @@ public partial class MainWindow : Window
     {
         var payload = root.GetProperty("payload");
         var path = payload.GetProperty("path").GetString()!;
-        Console.WriteLine($"Opening recent workspace at path: {path}");
         var filePath = Path.Combine(path, "workspace.json");
-        Console.WriteLine($"{filePath}");
         if (!File.Exists(filePath)) return;
 
         var workspaceJson = File.ReadAllText(filePath);
@@ -193,65 +304,41 @@ public partial class MainWindow : Window
         SendMessage(new
         {
             type = "openRecentWorkspaceResult",
-            workspace = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(workspace, JsonOptions))
+            data = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(workspace, JsonOptions))
         });
     }
 
     private void LoadChallenges(JsonElement root)
     {
         var payload = root.GetProperty("payload");
-        var workspacePath = payload.GetProperty("workspacePath").GetString()!;
+        var path = payload.GetProperty("path").GetString()!;
 
-        var challengesPath = Path.Combine(workspacePath, "challenges");
-        if (!Directory.Exists(challengesPath))
-        {
-            SendMessage(new
-            {
-                type = "loadChallengesResult",
-                challenges = Array.Empty<object>()
-            });
-            return;
-        }
-
-        var challengeFiles = Directory.GetFiles(challengesPath, "challenge.json", SearchOption.AllDirectories);
-        var challenges = new List<object>();
-
-        foreach (var file in challengeFiles)
-        {
-            var challengeJson = File.ReadAllText(file);
-            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            var challenge = JsonSerializer.Deserialize<Challenge>(challengeJson, options);
-            if (challenge != null)
-            {
-                var challengeObj = new
-                {
-                    id = challenge.Id,
-                    title = challenge.Title,
-                    description = challenge.Description,
-                    tags = challenge.Tags,
-                    solution = challenge.Solution,
-                    flag = challenge.Flag,
-                    createdAt = challenge.CreatedAt,
-                    updatedAt = challenge.UpdatedAt
-                };
-                challenges.Add(challengeObj);
-            }
-        }
+        var challenges = ReadChallenges(path).Select(ToChallengePayload).ToArray();
 
         SendMessage(new
         {
             type = "loadChallengesResult",
-            challenges
+            data = challenges
         });
     }
 
     private void CreateChallenge(JsonElement root)
     {
         var payload = root.GetProperty("payload");
-        var workspacePath = payload.GetProperty("workspacePath").GetString()!;
-        var challengeName = payload.GetProperty("challengeName").GetString()!;
+        var path = payload.GetProperty("path").GetString()!;
+        var title = payload.GetProperty("title").GetString()!;
 
-        var challengePath = Path.Combine(workspacePath, "challenges", challengeName);
+        if (string.IsNullOrWhiteSpace(title) || HasInvalidChallengeTitle(title))
+        {
+            SendMessage(new
+            {
+                type = "createChallengeFailed",
+                error = "Challenge title contains invalid file name characters."
+            });
+            return;
+        }
+
+        var challengePath = Path.Combine(GetChallengesRoot(path), title);
         if (Directory.Exists(challengePath))
         {
             SendMessage(new
@@ -266,7 +353,7 @@ public partial class MainWindow : Window
         var challenge = new Challenge
         {
             Id = Guid.NewGuid(),
-            Title = challengeName,
+            Title = title,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -277,51 +364,45 @@ public partial class MainWindow : Window
         SendMessage(new
         {
             type = "createChallengeResult",
-            path = challengePath
+            data = challengePath
         });
     }
 
-    private List<Workspace> ReadRecentWorkspaces()
+    private void UpdateChallenge(JsonElement root)
     {
-        var recentPath = GetRecentWorkspacesPath();
-        var recentJson = File.ReadAllText(recentPath);
-        return JsonSerializer.Deserialize<List<Workspace>>(recentJson, JsonOptions) ?? new List<Workspace>();
-    }
+        var payload = root.GetProperty("payload");
+        var workspacePath = payload.GetProperty("path").GetString()!;
+        var challengeId = payload.GetProperty("id").GetGuid();
 
-    private void SaveRecentWorkspaces(List<Workspace> recentWorkspaces)
-    {
-        var recentPath = GetRecentWorkspacesPath();
-        File.WriteAllText(recentPath, JsonSerializer.Serialize(recentWorkspaces, JsonOptions));
-    }
-
-    private static string GetWorkspacePath(Workspace workspace)
-    {
-        return Path.Combine(workspace.Location, workspace.Name);
-    }
-
-    private static bool WorkspacePathsMatch(Workspace left, Workspace right)
-    {
-        return StringComparer.OrdinalIgnoreCase.Equals(GetWorkspacePath(left), GetWorkspacePath(right));
-    }
-
-    private List<Workspace> NormalizeRecentWorkspaces(IEnumerable<Workspace> recentWorkspaces)
-    {
-        var normalized = new List<Workspace>();
-
-        foreach (var workspace in recentWorkspaces)
+        var challengeFilePath = FindChallengeFile(workspacePath, challengeId);
+        if (challengeFilePath == null)
         {
-            normalized.RemoveAll(existing => WorkspacePathsMatch(existing, workspace));
-            normalized.Add(workspace);
+            SendMessage(new
+            {
+                type = "updateChallengeFailed",
+                error = "Challenge not found."
+            });
+            return;
         }
 
-        return normalized;
-    }
+        var challenge = ReadChallengeFile(challengeFilePath);
+        if (challenge == null)
+        {
+            SendMessage(new
+            {
+                type = "updateChallengeFailed",
+                error = "Challenge could not be read."
+            });
+            return;
+        }
 
-    private void UpsertRecentWorkspace(Workspace workspace)
-    {
-        var recentWorkspaces = NormalizeRecentWorkspaces(ReadRecentWorkspaces());
-        recentWorkspaces.RemoveAll(existing => WorkspacePathsMatch(existing, workspace));
-        recentWorkspaces.Add(workspace);
-        SaveRecentWorkspaces(recentWorkspaces);
+        if (payload.TryGetProperty("description", out var descriptionElement)) challenge.Description = descriptionElement.GetString() ?? "";
+        if (payload.TryGetProperty("solution", out var solutionElement)) challenge.Solution = solutionElement.GetString() ?? "";
+        if (payload.TryGetProperty("flag", out var flagElement)) challenge.Flag = flagElement.GetString() ?? "";
+
+        challenge.UpdatedAt = DateTime.UtcNow;
+        File.WriteAllText(challengeFilePath, JsonSerializer.Serialize(challenge, JsonOptions));
+
+        SendChallengeResult("updateChallengeResult", challenge);
     }
 }

@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createWorkspace, pickFolder } from '../services/host'
+import { sendCommand } from '../services/host'
 import { useWorkspaceStore } from '../stores/workspaceStore'
+import { Commands } from '../utils/commands'
+import type { Workspace } from '../utils/types'
 
 type Props = {
     open: boolean
@@ -15,7 +17,7 @@ export default function CreateWorkspaceModal({ open, onClose }: Props) {
     const [workspaceLocation, setWorkspaceLocation] = useState('')
     
     const handleSelectLocation = async() => {
-        const path = await pickFolder()
+        const path = await sendCommand<string>(Commands.PickFolder)
         setWorkspaceLocation(path || '')
     }
 
@@ -26,8 +28,9 @@ export default function CreateWorkspaceModal({ open, onClose }: Props) {
     }
 
     const handleCreate = async() => {
-        await createWorkspace(workspaceName, workspaceLocation)
-        workspaceStore.setWorkspace(workspaceName, `${workspaceLocation}\\${workspaceName}`)
+        const workspacePath = `${workspaceLocation}\\${workspaceName}`
+        await sendCommand<Workspace>(Commands.CreateWorkspace, { name: workspaceName, path: workspacePath })
+        workspaceStore.setWorkspace(workspaceName, workspacePath)
         handleCancel()
         navigate('/workspace')
     }

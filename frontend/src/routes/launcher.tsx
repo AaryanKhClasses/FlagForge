@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import CreateWorkspaceModal from '../components/CreateWorkspaceModal'
-import { loadRecentWorkspaces, openRecentWorkspace, openWorkspace } from '../services/host'
+import { sendCommand } from '../services/host'
 import { useWorkspaceStore } from '../stores/workspaceStore'
 import type { Workspace } from '../utils/types'
+import { Commands } from '../utils/commands'
 
 export default function Launcher() {
     const workspaceStore = useWorkspaceStore()
@@ -12,21 +13,30 @@ export default function Launcher() {
     const [recentWorkspaces, setRecentWorkspaces] = useState<Workspace[]>([])
 
     const handleOpen = async() => {
-        const workspace = await openWorkspace()
+        const workspace = await sendCommand<Workspace>(Commands.OpenWorkspace)
         if(!workspace) return
-        workspaceStore.setWorkspace(workspace.name, `${workspace.location}\\${workspace.name}`)
+        workspaceStore.setWorkspace(workspace.name, workspace.path)
         navigate('/workspace')
     }
 
     useEffect(() => {
         const load = async() => {
-            const workspaces = await loadRecentWorkspaces()
-            setRecentWorkspaces(workspaces)
+            const workspaces = await sendCommand<Workspace[]>(Commands.LoadRecentWorkspaces)
+            const sortedWorkspaces = workspaces.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+            setRecentWorkspaces(sortedWorkspaces)
         }
         load()
     }, [])
 
-    return <div className="h-screen flex">
+    const formatDateString = (dateString: string): string => {
+        const date = new Date(dateString)
+        const now = new Date()
+        if(now.getMilliseconds() - date.getMilliseconds() < 1000 * 60 * 60 * 24) return "Today"
+        else if(now.getMilliseconds() - date.getMilliseconds() < 1000 * 60 * 60 * 24 * 2) return "Yesterday"
+        else return date.toDateString()
+    }
+
+    return <div className="min-h-[calc(100vh-3rem)] flex">
         <aside className="flex flex-col gap-2 w-[20vw] bg-bg-light border-r border-border p-6">
             <h1 className="font-semibold uppercase">Recent Workspaces</h1>
             <span className="text-sm text-muted">Your recently opened workspaces</span>
@@ -36,15 +46,14 @@ export default function Launcher() {
                 : recentWorkspaces.map(workspace => <button
                     key={workspace.id}
                     onClick={async() => {
-                        const openedWorkspace = await openRecentWorkspace(workspace.path)
-                        console.log(openedWorkspace)
-                        workspaceStore.setWorkspace(openedWorkspace.name, `${workspace.location}\\${workspace.name}`)
+                        const openedWorkspace = await sendCommand<Workspace>(Commands.OpenRecentWorkspace, { path: workspace.path })
+                        workspaceStore.setWorkspace(openedWorkspace.name, openedWorkspace.path)
                         navigate('/workspace')
                     }}
                     className="text-left w-full p-4 rounded-xl cursor-pointer bg-border/50 hover:bg-primary transition"
                 >
                     <span className="font-semibold">{workspace.name}</span>
-                    <span className="text-xs line-clamp-1 break-all">Last Updated: {new Date(workspace.updatedAt).toLocaleString()}</span>
+                    <span className="text-xs line-clamp-1 break-all">Last Updated: {formatDateString(workspace.updatedAt.toLocaleString())}</span>
                 </button>)
             }
         </aside>

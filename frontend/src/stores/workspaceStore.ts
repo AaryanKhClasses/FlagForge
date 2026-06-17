@@ -1,65 +1,58 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { sendCommand } from '../services/host'
+import { Commands } from '../utils/commands'
 import type { Challenge } from '../utils/types'
-import { updateChallengeTags } from '../services/host'
 
 type WorkspaceStore = {
     name: string
-    location: string
+    path: string
     challenges: Challenge[]
     activeChallenge: Challenge | null
-    setWorkspace: (name: string, location: string) => void
+    setWorkspace: (name: string, path: string) => void
     setChallenges: (challenges: Challenge[]) => void
-    setActiveChallenge: (challenge: Challenge) => void
-    addTagToActiveChallenge: (tag: string) => Promise<void>
-    removeTagFromActiveChallenge: (tag: string) => Promise<void>
+    setActiveChallenge: (challenge: Challenge | null) => void
+    loadChallenges: () => Promise<void>
+    updateActiveChallengeField: (field: 'description' | 'solution' | 'flag', value: string) => Promise<Challenge | null>
 }
 
-
-export const useWorkspaceStore = create<WorkspaceStore>()(persist(set => ({
+export const useWorkspaceStore = create<WorkspaceStore>()(persist((set, get) => ({
     name: '',
-    location: '',
+    path: '',
     challenges: [],
     activeChallenge: null,
-    setWorkspace: (name, location) => set({ name, location }),
-    setChallenges: (challenges) => set({ challenges }),
+    setWorkspace: (name, path) => set({ name, path }),
+    setChallenges: (challenges) => set(state => ({
+        challenges,
+        activeChallenge: state.activeChallenge
+            ? challenges.find(challenge => challenge.id === state.activeChallenge?.id) ?? null
+            : null
+    })),
     setActiveChallenge: (challenge) => set({ activeChallenge: challenge }),
-    addTagToActiveChallenge: async (tag: string) => {
-        set(state => {
-            if (!state.activeChallenge) return {}
-            if (state.activeChallenge.tags.includes(tag)) return {}
-
-            const updatedTags = [...state.activeChallenge.tags, tag]
-            const updatedChallenge: Challenge = { ...state.activeChallenge, tags: updatedTags }
-            const updatedChallenges = state.challenges.map(c =>
-                c.id === updatedChallenge.id ? updatedChallenge : c
-            )
-
-            updateChallengeTags(state.location, updatedChallenge.id, updatedTags)
-
-            return {
-                activeChallenge: updatedChallenge,
-                challenges: updatedChallenges
-            }
-        })
+    loadChallenges: async () => {
+        const fetchedChallenges = await sendCommand<Challenge[]>(Commands.LoadChallenges, { path: get().path })
+        set(state => ({
+            challenges: fetchedChallenges,
+            activeChallenge: state.activeChallenge
+                ? fetchedChallenges.find(challenge => challenge.id === state.activeChallenge?.id) ?? null
+                : null
+        }))
     },
-    removeTagFromActiveChallenge: async (tag: string) => {
-        set(state => {
-            if (!state.activeChallenge) return {}
+    updateActiveChallengeField: async (field, value) => {
+        const current = get().activeChallenge
+        if(!current) return null
 
-            const updatedTags = state.activeChallenge.tags.filter(t => t !== tag)
-            const updatedChallenge: Challenge = { ...state.activeChallenge, tags: updatedTags }
-            const updatedChallenges = state.challenges.map(c =>
-                c.id === updatedChallenge.id ? updatedChallenge : c
-            )
-
-            updateChallengeTags(state.location, updatedChallenge.id, updatedTags)
-
-            return {
-                activeChallenge: updatedChallenge,
-                challenges: updatedChallenges
-            }
+        const updatedChallenge = await sendCommand<Challenge>(Commands.UpdateChallenge, {
+            path: get().path,
+            id: current.id,
+            [field]: value
         })
+
+        set(state => ({
+            challenges: state.challenges.map(challenge => challenge.id === updatedChallenge.id ? updatedChallenge : challenge),
+            activeChallenge: updatedChallenge
+        }))
+
+        return updatedChallenge
     }
 }), { name: 'workspace-store' }))
-
