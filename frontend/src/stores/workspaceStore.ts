@@ -50,10 +50,10 @@ export const useWorkspaceStore = create<WorkspaceStore>()(persist((set, get) => 
                 : null
         }))
     },
-    updateActiveChallengeField: async (field: 'tags' | 'description' | 'solution' | 'flag', value: string | string[]) => {
+    updateActiveChallengeField: async (field, value) => {
         const current = get().activeChallenge
-        if (!current) return null
-        
+        if(!current) return null
+
         const updatedChallenge = await sendCommand<Challenge>(Commands.UpdateChallenge, {
             path: get().path,
             id: current.id,

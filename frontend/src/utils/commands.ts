@@ -12,4 +12,5 @@ export const Commands = {
     AddAttachments: 'addAttachments',
     ReorderChallenges: 'reorderChallenges',
     UpdateDiscordRPC: 'updateDiscordRPC',
+    GetAttachment: 'getAttachment'
 } as const

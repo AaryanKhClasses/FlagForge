@@ -65,6 +65,7 @@ public partial class MainWindow : Window
             case "addAttachments": AddAttachments(root); break;
             case "reorderChallenges": ReorderChallenges(root); break;
             case "updateDiscordRPC": UpdateDiscordRPC(root); break;
+            case "getAttachment": GetAttachment(root); break;
 
             case "minimizeWindow": WindowState = WindowState.Minimized; break;
             case "closeWindow": Close(); break;
@@ -578,5 +579,65 @@ public partial class MainWindow : Window
         var details = payload.GetProperty("details").GetString() ?? "";
         var state = payload.GetProperty("state").GetString() ?? "";
         _discord.UpdateRichPresence(details, state);
+    }
+
+    private void GetAttachment(JsonElement root)
+    {
+        var payload = root.GetProperty("payload");
+        var path = payload.GetProperty("path").GetString()!;
+        var challengeId = payload.GetProperty("challengeId").GetGuid();
+        var name = payload.GetProperty("name").GetString()!;
+
+        var challengeFilePath = FindChallengeFile(path, challengeId);
+        if (challengeFilePath == null)
+        {
+            SendMessage(new
+            {
+                type = "getAttachmentFailed",
+                error = "Challenge not found."
+            });
+            return;
+        }
+
+        var challenge = ReadChallengeFile(challengeFilePath);
+        if (challenge == null || !challenge.Attachments.Contains(name))
+        {
+            SendMessage(new
+            {
+                type = "getAttachmentFailed",
+                error = "Attachment not found."
+            });
+            return;
+        }
+
+        var challengePath = Path.GetDirectoryName(challengeFilePath)!;
+        var attachmentPath = Path.Combine(challengePath, name);
+
+        if (!File.Exists(attachmentPath))
+        {
+            SendMessage(new
+            {
+                type = "getAttachmentFailed",
+                error = "Attachment file not found."
+            });
+            return;
+        }
+
+        var attachmentBytes = File.ReadAllBytes(attachmentPath);
+        var attachmentBase64 = Convert.ToBase64String(attachmentBytes);
+        var base64Formats = new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".pdf" };
+        var attachment = !base64Formats.Contains(Path.GetExtension(name).ToLowerInvariant())
+            ? File.ReadAllText(attachmentPath)
+            : attachmentBase64;
+        SendMessage(new
+        {
+            type = "getAttachmentResult",
+            data = new
+            {
+                name,
+                content = attachment,
+                type = Path.GetExtension(name).ToLowerInvariant()
+            }
+        });
     }
 }
