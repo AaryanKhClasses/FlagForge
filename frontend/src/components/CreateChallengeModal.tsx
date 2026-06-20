@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { sendCommand } from '../services/host'
 import { useWorkspaceStore } from '../stores/workspaceStore'
 import { Commands } from '../utils/commands'
@@ -19,7 +20,14 @@ export default function CreateChallengeModal({ open, onClose, onCreate }: Props)
     }
 
     const handleCreate = async() => {
-        await sendCommand(Commands.CreateChallenge, { path: workspaceStore.path, title: challengeTitle })
+        try {
+            await sendCommand(Commands.CreateChallenge, { path: workspaceStore.path, title: challengeTitle })
+            toast.success('Challenge created successfully!')
+        } catch(err) {
+            console.error(err)
+            toast.error(err instanceof Error ? err.message : 'Failed to create challenge.')
+        }
+
         await workspaceStore.loadChallenges()
         handleCancel()
         onCreate()

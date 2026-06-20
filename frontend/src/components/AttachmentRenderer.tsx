@@ -1,15 +1,5 @@
-import { useEffect, useState } from 'react'
-import { sendCommand } from '../services/host'
-import { useWorkspaceStore } from '../stores/workspaceStore'
-import { Commands } from '../utils/commands'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { headingsPlugin, linkPlugin, listsPlugin, MDXEditor, quotePlugin } from '@mdxeditor/editor'
-
-type Props = {
-    open: boolean
-    attachment: string
-}
+import { Editor } from '@monaco-editor/react'
 
 type AttachmentData = {
     name: string
@@ -22,54 +12,37 @@ const CODE_TYPES = [
     '.c', '.cpp', '.py', '.js', '.java', '.html', '.css', '.json', '.txt', '.ts'
 ] as const
 
-export default function AttachmentRenderer({ open, attachment }: Props) {
-    const workspaceStore = useWorkspaceStore()
-    const [file, setFile] = useState<AttachmentData | null>(null)
-
-    useEffect(() => {
-        if(!open) return
-        const loadAttachment = async() => {
-            const res = await sendCommand<AttachmentData>(Commands.GetAttachment, {  
-                path: workspaceStore.path,
-                challengeId: workspaceStore.activeChallenge?.id,
-                name: attachment
-            })
-            setFile(res)
-        }
-        loadAttachment()
-    }, [open, attachment, workspaceStore.path, workspaceStore.activeChallenge?.id])
-
-    const renderer = (file: AttachmentData) => {
-        if(CODE_TYPES.includes(file.type as any)) return <CodeRenderer file={file} />
-        if(file.mimeType.startsWith('image/')) return <ImageRenderer file={file} />
-        if(file.mimeType === 'application/pdf') return <PdfRenderer file={file} />
-        if(file.mimeType.startsWith('audio/')) return <AudioRenderer file={file} />
-        if(file.mimeType.startsWith('video/')) return <VideoRenderer file={file} />
-        if(file.type === '.md') return <MarkdownRenderer file={file} />
-    }
-
+export const renderer = (open: boolean, file: AttachmentData | null, editable: boolean, setFile: React.Dispatch<React.SetStateAction<AttachmentData | null>>) => {
     if(!open) return null
-    if(!file) return <div className="flex flex-col items-center justify-center gap-2 p-6 flex-1">
-        <p className="text-gray-500">Loading attachment...</p>
+    if(!file) return <div className="flex flex-col items-center gap-2 p-6 flex-1">
+        <p className="text-muted self-center">Loading attachment...</p>
     </div>
 
-    return <div className="flex flex-col items-center justify-center gap-2 p-6 flex-1">
-        {renderer(file) || <p className="text-gray-500">Unsupported file type: {file.type}</p>}
-    </div>
+    if(CODE_TYPES.includes(file.type as any)) return <CodeRenderer file={file} editable={editable} setFile={setFile} />
+    if(file.mimeType.startsWith('image/')) return <ImageRenderer file={file} />
+    if(file.mimeType === 'application/pdf') return <PdfRenderer file={file} />
+    if(file.mimeType.startsWith('audio/')) return <AudioRenderer file={file} />
+    if(file.mimeType.startsWith('video/')) return <VideoRenderer file={file} />
+    if(file.type === '.md') return <MarkdownRenderer file={file} />
 }
 
 function ImageRenderer({ file }: { file: AttachmentData }) {
-    return <img src={`data:${file.mimeType};base64,${file.content}`} alt={file.name} className="max-w-full max-h-[80vh]" />
+    return <img src={`data:${file.mimeType};base64,${file.content}`} alt={file.name} className="max-w-full w-fit self-center max-h-[80vh]" />
 }
 
 function PdfRenderer({ file }: { file: AttachmentData }) {
     return <iframe src={`data:${file.mimeType};base64,${file.content}`} title={file.name} className="w-full h-[80vh]" />
 }
 
-function CodeRenderer({ file }: { file: AttachmentData }) {
-    return <SyntaxHighlighter language={file.type.slice(1)} style={oneDark} showLineNumbers customStyle={{ width: '100%', minHeight: '80vh', overflowY: 'auto' }}>
-        {file.content}
-    </SyntaxHighlighter>
+function CodeRenderer({ file, editable, setFile }: { file: AttachmentData, editable: boolean, setFile: React.Dispatch<React.SetStateAction<AttachmentData | null>> }) {
+    return <Editor
+        height="80vh" width="100%"
+        language={file.type.slice(1)} value={file.content} onChange={(value) => {
+            if(editable) setFile(prev => prev ? { ...prev, content: value || '' } : null)
+        }}
+        theme="vs-dark"
+        options={{ readOnly: !editable, minimap: { enabled: false } }}
+    />
 }
 
 function AudioRenderer({ file }: { file: AttachmentData }) {

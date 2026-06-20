@@ -4,6 +4,7 @@ import { sendCommand } from '../services/host'
 import { useWorkspaceStore } from '../stores/workspaceStore'
 import { Commands } from '../utils/commands'
 import type { Workspace } from '../utils/types'
+import toast from 'react-hot-toast'
 
 type Props = {
     open: boolean
@@ -29,10 +30,15 @@ export default function CreateWorkspaceModal({ open, onClose }: Props) {
 
     const handleCreate = async() => {
         const workspacePath = `${workspaceLocation}\\${workspaceName}`
-        await sendCommand<Workspace>(Commands.CreateWorkspace, { name: workspaceName, path: workspacePath })
-        workspaceStore.setWorkspace(workspaceName, workspacePath)
-        handleCancel()
-        navigate('/workspace')
+        try {
+            await sendCommand<Workspace>(Commands.CreateWorkspace, { name: workspaceName, path: workspacePath })
+            workspaceStore.setWorkspace(workspaceName, workspacePath)
+            handleCancel()
+            navigate('/workspace')
+        } catch(err) {
+            console.log('Error creating workspace:', err)
+            toast.error(err instanceof Error ? err.message : 'Failed to create workspace')
+        }
     }
 
     return <div className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 transition-opacity ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>

@@ -1,6 +1,7 @@
 import { faUpload, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useState } from 'react'
+import { toast } from 'react-hot-toast/headless'
 import { sendCommand } from '../services/host'
 import { useWorkspaceStore } from '../stores/workspaceStore'
 import { Commands } from '../utils/commands'
@@ -8,25 +9,51 @@ import { Commands } from '../utils/commands'
 type Props = {
     open: boolean
     onClose: () => void
+    onCreate: () => void
 }
 
-export default function AddAttachmentsModal({ open, onClose }: Props) {
+export default function AddAttachmentsModal({ open, onClose, onCreate }: Props) {
     const workspaceStore = useWorkspaceStore()
     const [newAttachmentName, setNewAttachmentName] = useState('')
+    const [attachmentUrl, setAttachmentUrl] = useState('')
 
-    const handleUploadAttachments = async() => {
+    const addAttachment = async(type: 'upload' | 'download' | 'create', options?: any) => {
         if(!workspaceStore.activeChallenge) return
-        await sendCommand(Commands.AddAttachments, { path: workspaceStore.path, id: workspaceStore.activeChallenge.id })
-        workspaceStore.loadChallenges()
+        try {
+            await sendCommand(Commands.AddAttachments, {
+                type,
+                path: workspaceStore.path,
+                id: workspaceStore.activeChallenge.id,
+                ...options
+            })
+            toast.success('Attachment added successfully!')
+        } catch(err) {
+            console.error(err)
+            toast.error(err instanceof Error ? err.message : 'Failed to add attachment.')
+        }
+        await workspaceStore.loadChallenges()
         onClose()
+        onCreate()
     }
 
-    const handleDownloadAttachment = async() => { }
+    const handleUploadAttachments = async() => {
+        addAttachment('upload')
+    }
 
-    const handleCreateAttachment = async() => { }
+    const handleDownloadAttachment = async() => {
+        if(!attachmentUrl) return
+        setAttachmentUrl('')
+        addAttachment('download', { url: attachmentUrl })
+    }
+
+    const handleCreateAttachment = async() => {
+        if(!newAttachmentName) return
+        setNewAttachmentName('')
+        addAttachment('create', { name: newAttachmentName })
+    }
 
     return <div className={`fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 transition-opacity ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        <div className="bg-bg-light border border-border/60 rounded-2xl shadow-2xl overflow-hidden w-[440px] max-w-[90vw]">
+        <div className="bg-bg-light border border-border/60 rounded-2xl shadow-2xl overflow-hidden w-110 max-w-[90vw]">
             <div className="flex items-center justify-between px-6 py-5 border-b border-border/40">
                 <h2 className="text-base font-semibold tracking-tight">Add Attachments</h2>
                 <button onClick={onClose} className="w-7 h-7 rounded-md flex items-center justify-center text-muted hover:text-text hover:bg-border/40 transition cursor-pointer">
@@ -40,7 +67,7 @@ export default function AddAttachmentsModal({ open, onClose }: Props) {
                     <button
                         id="attachment-file-upload"
                         onClick={handleUploadAttachments}
-                        className="flex flex-col items-center gap-2.5 px-6 py-7 rounded-xl border border-dashed border-border/70 bg-text/[0.02] hover:border-primary/40 hover:bg-primary/[0.03] transition cursor-pointer"
+                        className="flex flex-col items-center gap-2.5 px-6 py-7 rounded-xl border border-dashed border-border/70 bg-text/2 hover:border-primary/40 hover:bg-primary/3 transition cursor-pointer"
                     >
                         <span className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                             <FontAwesomeIcon icon={faUpload} className="text-sm" />
@@ -56,10 +83,12 @@ export default function AddAttachmentsModal({ open, onClose }: Props) {
                         <input
                             type="text"
                             id="attachment-url-download"
+                            value={attachmentUrl}
+                            onChange={(e) => setAttachmentUrl(e.target.value)}
                             placeholder="https://..."
                             className="flex-1 px-3 py-2.5 text-sm rounded-lg border border-border bg-bg placeholder:text-muted/60 focus:outline-none focus:ring-1 focus:ring-primary transition"
                         />
-                        <button onClick={handleDownloadAttachment} className="px-4 py-2.5 text-sm font-semibold bg-primary/90 hover:bg-primary rounded-lg cursor-pointer transition whitespace-nowrap">Download</button>
+                        <button onClick={handleDownloadAttachment} className="px-4 py-2.5 text-sm font-semibold bg-primary/90 hover:bg-primary rounded-lg cursor-pointer transition whitespace-nowrap w-24">Download</button>
                     </div>
                 </div>
 
@@ -74,7 +103,7 @@ export default function AddAttachmentsModal({ open, onClose }: Props) {
                             placeholder="filename.md"
                             className="flex-1 px-3 py-2.5 text-sm rounded-lg border border-border bg-bg placeholder:text-muted/60 focus:outline-none focus:ring-1 focus:ring-primary transition"
                         />
-                        <button onClick={handleCreateAttachment} className="px-4 py-2.5 text-sm font-semibold bg-primary/90 hover:bg-primary rounded-lg cursor-pointer transition whitespace-nowrap">Create</button>
+                        <button onClick={handleCreateAttachment} className="px-4 py-2.5 text-sm font-semibold bg-primary/90 hover:bg-primary rounded-lg cursor-pointer transition whitespace-nowrap w-24">Create</button>
                     </div>
                 </div>
             </div>

@@ -1,16 +1,17 @@
-import { faDownload, faFileCirclePlus, faFilter, faGripVertical, faPlus, faTag, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faDownload, faFileCirclePlus, faFilter, faInfoCircle, faPen, faPlus, faTag, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { BlockTypeSelect, BoldItalicUnderlineToggles, headingsPlugin, linkPlugin, listsPlugin, ListsToggle, markdownShortcutPlugin, MDXEditor, quotePlugin, toolbarPlugin, UndoRedo } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AddAttachmentsModal from '../components/AddAttachmentsModal'
-import AttachmentRenderer from '../components/AttachmentRenderer'
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal'
 import CreateChallengeModal from '../components/CreateChallengeModal'
 import { sendCommand } from '../services/host'
 import { useWorkspaceStore } from '../stores/workspaceStore'
 import { Commands } from '../utils/commands'
+import toast from 'react-hot-toast'
+import { renderer } from '../components/AttachmentRenderer'
 
 const CTF_DEFAULT_TAGS = [
     'pwn', 'forensics', 'cryptography', 'web', 'reversing',
@@ -19,11 +20,21 @@ const CTF_DEFAULT_TAGS = [
     'xss', 'rop', 'ppc', 'trivia', 're'
 ]
 
+type AttachmentData = {
+    name: string
+    content: string
+    type: string
+    mimeType: string
+}
+
 export default function Workspace() {
     const navigate = useNavigate()
     const workspaceStore = useWorkspaceStore()
     const [view, setView] = useState<'challenge' | 'attachment'>('challenge')
     const [attachmentToView, setAttachmentToView] = useState<string | null>(null)
+    const [file, setFile] = useState<AttachmentData | null>(null)
+    const [attachmentEditable, setAttachmentEditable] = useState(false)
+    const [deleteAttachmentModalOpen, setDeleteAttachmentModalOpen] = useState(false)
 
     const [createChallengeModalOpen, setCreateChallengeModalOpen] = useState(false)
     const [deleteChallengeModalOpen, setDeleteChallengeModalOpen] = useState(false)
@@ -64,6 +75,7 @@ export default function Workspace() {
                 try { await sendCommand(Commands.ReorderChallenges, { path: workspaceStore.path, challenges: updatedChallenges.map(c => ({ id: c.id, order: c.order })) }) }
                 catch(err) {
                     console.error('Error reordering challenges:', err)
+                    toast.error(err instanceof Error ? err.message : 'Failed to reorder challenges. Please try again.')
                     await workspaceStore.loadChallenges()
                 }
             }
@@ -176,12 +188,24 @@ export default function Workspace() {
 
     const handleCreateReadme = async() => {
         if(!activeChallenge) return
-        await sendCommand(Commands.CreateReadme, { path: workspaceStore.path, title: activeChallenge.title })
+        try {
+            await sendCommand(Commands.CreateReadme, { path: workspaceStore.path, title: activeChallenge.title })
+            toast.success('README.md created successfully!')
+        } catch(err) {
+            console.error(err)
+            toast.error(err instanceof Error ? err.message : 'Failed to create README.md.')
+        }
     }
 
     const handleDeleteChallenge = async() => {
         if(!activeChallenge) return
-        await sendCommand(Commands.DeleteChallenge, { path: workspaceStore.path, id: activeChallenge.id })
+        try {
+            await sendCommand(Commands.DeleteChallenge, { path: workspaceStore.path, id: activeChallenge.id })
+            toast.success('Challenge deleted successfully!')
+        } catch(err) {
+            console.error(err)
+            toast.error(err instanceof Error ? err.message : 'Failed to delete challenge.')
+        }
         workspaceStore.loadChallenges()
     }
 
@@ -214,6 +238,60 @@ export default function Workspace() {
         if(isCompleted && !isActive) return 'bg-success/30 hover:bg-success/50 border border-text/10 text-text/90'
         if(!isCompleted && isActive) return 'bg-primary'
         return 'bg-border/50 hover:bg-border'
+    }
+
+    useEffect(() => {
+        if(view !== 'attachment') return
+        const loadAttachment = async() => {
+            try {
+                const res = await sendCommand<AttachmentData>(Commands.GetAttachment, {  
+                    path: workspaceStore.path,
+                    challengeId: workspaceStore.activeChallenge?.id,
+                    name: attachmentToView
+                })
+                setFile(res)
+            } catch (err) {
+                console.error('Error loading attachment:', err)
+                toast.error(err instanceof Error ? err.message : 'Failed to load attachment')
+            }
+        }
+        loadAttachment()
+    }, [view, attachmentToView, workspaceStore.path, workspaceStore.activeChallenge?.id])
+
+    useEffect(() => {
+        if(attachmentEditable || !file) return
+        const saveAttachment = async() => {
+            try {
+                await sendCommand(Commands.SaveAttachment, {
+                    path: workspaceStore.path,
+                    challengeId: workspaceStore.activeChallenge?.id,
+                    name: file.name,
+                    content: file.content
+                })
+            } catch (err) {
+                console.error('Error saving attachment:', err)
+                toast.error(err instanceof Error ? err.message : 'Failed to save attachment')
+            }
+        }
+        saveAttachment()
+    }, [attachmentEditable, file, workspaceStore.path, workspaceStore.activeChallenge?.id])
+
+    const handleDeleteAttachment = async() => {
+        if(!file) return
+        try {
+            await sendCommand(Commands.DeleteAttachment, {
+                path: workspaceStore.path,
+                challengeId: workspaceStore.activeChallenge?.id,
+                name: file.name
+            })
+            toast.success('Attachment deleted successfully')
+        } catch (err) {
+            console.error('Error deleting attachment:', err)
+            toast.error(err instanceof Error ? err.message : 'Failed to delete attachment')
+        }
+        workspaceStore.loadChallenges()
+        setFile(null)
+        setView('challenge')
     }
 
     return <div className="min-h-[calc(100vh-3rem)] flex">
@@ -319,23 +397,17 @@ export default function Workspace() {
 
                                 <div className="flex-1 min-w-0 pt-px" onClick={() => handleSelectChallenge(challenge)}>
                                     <div className="line-clamp-1 font-medium">{challenge.title}</div>
-                                    {isActive && challenge.tags.length > 0 && (
-                                        <div className="mt-1.5">
-                                            <div className="flex flex-wrap gap-1">
-                                                {challenge.tags.slice(0, 2).map(tag => (
-                                                    <span key={tag} className={`text-[10px] px-1.5 rounded-full ${isCompleted ? 'bg-text/10 text-text/90' : 'bg-text/30 text-text/80'}`}>{tag}</span>
-                                                ))}
-                                                {challenge.tags.length > 2 && 
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-text/10 text-text/90">+{challenge.tags.length - 2}</span>
-                                                }
-                                            </div>
+                                    {isActive && challenge.tags.length > 0 && <div className="mt-1.5">
+                                        <div className="flex flex-wrap gap-1">
+                                            {challenge.tags.slice(0, 2).map(tag => <span key={tag} className={`text-[10px] px-1.5 rounded-full ${isCompleted ? 'bg-text/10 text-text/90' : 'bg-text/30 text-text/80'}`}>{tag}</span>)}
+                                            {challenge.tags.length > 2 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-text/10 text-text/90">+{challenge.tags.length - 2}</span>}
                                         </div>
-                                    )}
+                                    </div>}
                                 </div>
                             </div>
 
-                            <div className={`overflow-hidden transition-all duration-200 ${isExpanded ? 'max-h-[200px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                                <div className="pl-[38px] pr-2">
+                            <div className={`overflow-hidden transition-all duration-200 ${isExpanded ? 'max-h-50 opacity-100' : 'max-h-0 opacity-0'}`}>
+                                <div className="pl-9.5 pr-2">
                                     {attachments.map(att => <button
                                         key={att}
                                         onClick={() => {
@@ -444,9 +516,21 @@ export default function Workspace() {
                     placeholder="flag{...}"
                 />
             </main>
-            : <AttachmentRenderer open={view === 'attachment'} attachment={attachmentToView || ''} />}
+            : <main className="flex flex-col gap-2 p-6 flex-1">
+                <div className="flex flex-row justify-between items-center">
+                    <h1 className="text-4xl line-clamp-1 leading-tight">{file?.name}</h1>
+                    <div className="flex flex-row gap-2 items-center">
+                        <button onClick={() => setAttachmentEditable(!attachmentEditable)} className={`bg-bg-light/50 px-3 py-2 border border-border rounded-xl cursor-pointer hover:bg-bg-light ${attachmentEditable ? 'text-primary' : 'hover:text-primary'} transition`}><FontAwesomeIcon icon={faPen} /></button>
+                        <button className="bg-bg-light/50 px-3 py-2 border border-border rounded-xl cursor-pointer hover:bg-bg-light hover:text-primary transition"><FontAwesomeIcon icon={faInfoCircle} /></button>
+                        <button onClick={() => setDeleteAttachmentModalOpen(true)} className="bg-bg-light/50 px-3 py-2 border border-border rounded-xl cursor-pointer hover:bg-bg-light hover:text-primary transition"><FontAwesomeIcon icon={faTrash} /></button>
+                    </div>
+                </div>
+                <hr className="my-2 border-border" />
+                {renderer(view === 'attachment', file, attachmentEditable, setFile) || <p className="text-muted self-center">Unsupported file type: {file?.type}</p>}
+                <ConfirmDeleteModal open={deleteAttachmentModalOpen} title="Are you sure you want to delete this attachment? This action cannot be undone." onClose={() => setDeleteAttachmentModalOpen(false)} onConfirm={handleDeleteAttachment} />
+            </main>}
         <CreateChallengeModal open={createChallengeModalOpen} onClose={() => setCreateChallengeModalOpen(false)} onCreate={() => workspaceStore.loadChallenges()} />
-        <ConfirmDeleteModal open={deleteChallengeModalOpen} onClose={() => setDeleteChallengeModalOpen(false)} onConfirm={handleDeleteChallenge} />
-        <AddAttachmentsModal open={addAttachmentsModalOpen} onClose={() => setAddAttachmentsModalOpen(false)} />
+        <ConfirmDeleteModal open={deleteChallengeModalOpen} title="Are you sure you want to delete this challenge? This action cannot be undone." onClose={() => setDeleteChallengeModalOpen(false)} onConfirm={handleDeleteChallenge} />
+        <AddAttachmentsModal open={addAttachmentsModalOpen} onClose={() => setAddAttachmentsModalOpen(false)} onCreate={() => workspaceStore.loadChallenges()} />
     </div>
 }

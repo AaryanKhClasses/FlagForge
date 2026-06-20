@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
 
@@ -67,6 +68,8 @@ public partial class MainWindow : Window
             case "reorderChallenges": ReorderChallenges(root); break;
             case "updateDiscordRPC": UpdateDiscordRPC(root); break;
             case "getAttachment": GetAttachment(root); break;
+            case "saveAttachment": SaveAttachment(root); break;
+            case "deleteAttachment": DeleteAttachment(root); break;
 
             case "minimizeWindow": WindowState = WindowState.Minimized; break;
             case "closeWindow": Close(); break;
@@ -529,6 +532,7 @@ public partial class MainWindow : Window
     private void AddAttachments(JsonElement root)
     {
         var payload = root.GetProperty("payload");
+        var type = payload.GetProperty("type").GetString()!;
         var path = payload.GetProperty("path").GetString()!;
         var challengeId = payload.GetProperty("id").GetGuid();
 
@@ -555,21 +559,70 @@ public partial class MainWindow : Window
         }
         var challengePath = Path.GetDirectoryName(challengeFilePath)!;
 
-        var dialog = new OpenFileDialog()
+        if (type == "upload")
         {
-            Title = "Select Attachments",
-            Multiselect = true
-        };
-        if (dialog.ShowDialog() != true) return;
+            var dialog = new OpenFileDialog()
+            {
+                Title = "Select Attachments",
+                Multiselect = true
+            };
+            if (dialog.ShowDialog() != true) return;
 
-        foreach (var file in dialog.FileNames)
+            foreach (var file in dialog.FileNames)
+            {
+                var fileName = Path.GetFileName(file);
+                var destPath = Path.Combine(challengePath, fileName);
+
+                File.Copy(file, destPath, true);
+                if (!challenge.Attachments.Contains(fileName)) challenge.Attachments.Add(fileName);
+            }
+        }
+        else if (type == "download")
         {
-            var fileName = Path.GetFileName(file);
+            var url = payload.GetProperty("url").GetString()!;
+            var fileName = Path.GetFileName(new Uri(url).LocalPath);
             var destPath = Path.Combine(challengePath, fileName);
 
-            File.Copy(file, destPath, true);
-            if (!challenge.Attachments.Contains(fileName)) challenge.Attachments.Add(fileName);
+            using (var client = new HttpClient())
+            {
+                try
+                {
+                    var response = client.GetAsync(url).Result;
+                    response.EnsureSuccessStatusCode();
+                    var contentBytes = response.Content.ReadAsByteArrayAsync().Result;
+                    File.WriteAllBytes(destPath, contentBytes);
+                    if (!challenge.Attachments.Contains(fileName)) challenge.Attachments.Add(fileName);
+                }
+                catch (Exception ex)
+                {
+                    SendMessage(new
+                    {
+                        type = "addAttachmentsFailed",
+                        error = $"Failed to download attachment: {ex.Message}"
+                    });
+                    return;
+                }
+            }
         }
+        else if (type == "create")
+        {
+            var name = payload.GetProperty("name").GetString()!;
+            var destPath = Path.Combine(challengePath, name);
+
+            if (File.Exists(destPath))
+            {
+                SendMessage(new
+                {
+                    type = "addAttachmentsFailed",
+                    error = "Attachment already exists."
+                });
+                return;
+            }
+
+            File.Create(destPath).Dispose();
+            if (!challenge.Attachments.Contains(name)) challenge.Attachments.Add(name);
+        }
+
         challenge.UpdatedAt = DateTime.UtcNow;
         File.WriteAllText(challengeFilePath, JsonSerializer.Serialize(challenge, JsonOptions));
 
@@ -673,5 +726,83 @@ public partial class MainWindow : Window
                 mimeType
             }
         });
+    }
+
+    private void SaveAttachment(JsonElement root)
+    {
+        var payload = root.GetProperty("payload");
+        var path = payload.GetProperty("path").GetString()!;
+        var challengeId = payload.GetProperty("challengeId").GetGuid();
+        var name = payload.GetProperty("name").GetString()!;
+        var content = payload.GetProperty("content").GetString()!;
+
+        var challengeFilePath = FindChallengeFile(path, challengeId);
+        if (challengeFilePath == null)
+        {
+            SendMessage(new
+            {
+                type = "saveAttachmentFailed",
+                error = "Challenge not found."
+            });
+            return;
+        }
+
+        var challenge = ReadChallengeFile(challengeFilePath);
+        if (challenge == null || !challenge.Attachments.Contains(name))
+        {
+            SendMessage(new
+            {
+                type = "saveAttachmentFailed",
+                error = "Attachment not found."
+            });
+            return;
+        }
+
+        var challengePath = Path.GetDirectoryName(challengeFilePath)!;
+        var attachmentPath = Path.Combine(challengePath, name);
+
+        File.WriteAllText(attachmentPath, content);
+
+        SendMessage(new { type = "saveAttachmentResult" });
+    }
+
+    private void DeleteAttachment(JsonElement root)
+    {
+        var payload = root.GetProperty("payload");
+        var path = payload.GetProperty("path").GetString()!;
+        var challengeId = payload.GetProperty("challengeId").GetGuid();
+        var name = payload.GetProperty("name").GetString()!;
+
+        var challengeFilePath = FindChallengeFile(path, challengeId);
+        if (challengeFilePath == null)
+        {
+            SendMessage(new
+            {
+                type = "deleteAttachmentFailed",
+                error = "Challenge not found."
+            });
+            return;
+        }
+
+        var challenge = ReadChallengeFile(challengeFilePath);
+        if (challenge == null || !challenge.Attachments.Contains(name))
+        {
+            SendMessage(new
+            {
+                type = "deleteAttachmentFailed",
+                error = "Attachment not found."
+            });
+            return;
+        }
+
+        var challengePath = Path.GetDirectoryName(challengeFilePath)!;
+        var attachmentPath = Path.Combine(challengePath, name);
+
+        if (File.Exists(attachmentPath)) File.Delete(attachmentPath);
+        challenge.Attachments.Remove(name);
+        challenge.UpdatedAt = DateTime.UtcNow;
+        File.WriteAllText(challengeFilePath, JsonSerializer.Serialize(challenge, JsonOptions));
+
+        SendChallengeResult("deleteAttachmentResult", challenge);
     }
 }
