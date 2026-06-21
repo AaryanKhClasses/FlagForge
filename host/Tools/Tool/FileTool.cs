@@ -8,8 +8,7 @@ public class FileTool : CommandTool
 
     public override async Task<List<ToolResult>> ExecuteAsync(string filePath, Dictionary<string, string>? options = null)
     {
-        var driveLetter = char.ToLower(filePath[0]);
-        var wslPath = $"/mnt/{driveLetter}{filePath.Substring(2).Replace("\\", "/")}";
+        var wslPath = ToolExecutor.ToWslPath(filePath);
         var output = await ToolExecutor.ExecuteAsync("wsl", $"file \"{wslPath}\"");
         var result = output?[(output.IndexOf(':') + 1)..].Trim() ?? "";
     
