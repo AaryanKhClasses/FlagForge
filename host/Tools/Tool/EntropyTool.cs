@@ -3,17 +3,10 @@ namespace FlagForgeHost.Tools.Tool;
 public class EntropyTool : CommandTool
 {
     public override string Name => "entropy";
+    public override string Description => "Checks File Entropy For Hidden Data";
 
-    public override string Description => "Checks file Entropy for Hidden Data";
-
-    public override async Task<List<ToolResult>> ExecuteAsync(string filePath, Dictionary<string, string>? options = null)
-    {
-        var wslPath = ToolExecutor.ToWslPath(filePath);
-        var output = await ToolExecutor.ExecuteAsync("wsl", $"binwalk -E \"{wslPath}\"");
-
-        return [new ToolResult {
-            Type = "Entropy",
-            Content = output?.Trim() is { Length: > 0 } result ? result : "Unable to caclulate entropy."
-        }];
-    }
+    protected override string BinaryName => "binwalk";
+    public override string InstallHint => "sudo apt install binwalk";
+    protected override string EmptyResultMessage => "Unable to calculate entropy.";
+    protected override string BuildArguments(string wslPath) => $"binwalk -E \"{wslPath}\"";
 }

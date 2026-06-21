@@ -3,17 +3,9 @@ namespace FlagForgeHost.Tools.Tool;
 public class ExiftoolTool : CommandTool
 {
     public override string Name => "exiftool";
-
     public override string Description => "Extracts Metadata";
 
-    public override async Task<List<ToolResult>> ExecuteAsync(string filePath, Dictionary<string, string>? options = null)
-    {
-        var wslPath = ToolExecutor.ToWslPath(filePath);
-        var output = await ToolExecutor.ExecuteAsync("wsl", $"exiftool \"{wslPath}\"");
-
-        return [new ToolResult {
-            Type = "Exiftool",
-            Content = output?.Trim() is { Length: > 0 } result ? result : "No metadata found."
-        }];
-    }
+    public override string InstallHint => "sudo apt install libimage-exiftool-perl";
+    protected override string EmptyResultMessage => "No metadata found.";
+    protected override string BuildArguments(string wslPath) => $"exiftool \"{wslPath}\"";
 }
