@@ -16,7 +16,14 @@ public static class ToolRegistry
         new HashidTool(),
         new WiresharkTool(),
         new PngfixTool(),
-        new ZbarimgTool()
+        new ZbarimgTool(),
+        new PdfInfoTool(),
+        new QpdfTool(),
+        new PdftotextTool(),
+        new MutoolTool(),
+        new SonicVisualiserTool(),
+        new CsoundTool(),
+        new FfprobeTool()
     ];
 
     public static IEnumerable<ITool> GetAvailableTools(string filePath)

@@ -263,7 +263,7 @@ export default function Workspace() {
                     name: attachmentToView
                 })
                 setFile(res)
-            } catch (err) {
+            } catch(err) {
                 console.error('Error loading attachment:', err)
                 toast.error(err instanceof Error ? err.message : 'Failed to load attachment')
             }
@@ -281,7 +281,7 @@ export default function Workspace() {
                     name: file.name,
                     content: file.content
                 })
-            } catch (err) {
+            } catch(err) {
                 console.error('Error saving attachment:', err)
                 toast.error(err instanceof Error ? err.message : 'Failed to save attachment')
             }
@@ -298,7 +298,7 @@ export default function Workspace() {
                 name: file.name
             })
             toast.success('Attachment deleted successfully')
-        } catch (err) {
+        } catch(err) {
             console.error('Error deleting attachment:', err)
             toast.error(err instanceof Error ? err.message : 'Failed to delete attachment')
         }

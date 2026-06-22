@@ -16,7 +16,7 @@ public abstract class CommandTool : ITool
 
     protected virtual string? GetWorkingDirectory(string filePath) => null;
 
-    public virtual async Task<List<ToolResult>> ExecuteAsync(string filePath, Dictionary<string, string> options = null)
+    public virtual async Task<List<ToolResult>> ExecuteAsync(string filePath, Dictionary<string, string>? options = null)
     {
         return [await RunAsync(filePath)];
     }

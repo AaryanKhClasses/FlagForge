@@ -2,8 +2,7 @@ import { useState } from 'react'
 import type { Tool, ToolResult } from '../utils/types'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core'
-import { faChevronDown, faChevronUp, faCircleCheck, faCopy, faEyeSlash, faFile, faFingerprint, faFont, faHashtag, faImage, faLayerGroup, faMagnifyingGlass, faNetworkWired,
-        faSpinner, faTerminal, faWaveSquare, faWrench, faBarcode, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
+import { faChevronDown, faChevronUp, faCircleCheck, faCopy, faEyeSlash, faFile, faFingerprint, faFont, faHashtag, faImage, faLayerGroup, faMagnifyingGlass, faNetworkWired, faSpinner, faTerminal, faWaveSquare, faWrench, faBarcode, faTriangleExclamation, faFilePdf, faFileAudio} from '@fortawesome/free-solid-svg-icons'
 import toast from 'react-hot-toast'
 import { sendCommand } from '../services/host'
 import { Commands } from '../utils/commands'
@@ -26,7 +25,14 @@ const TOOL_ICONS: Record<string, IconDefinition> = {
     hashid: faHashtag,
     wireshark: faNetworkWired,
     pngfix: faWrench,
-    zbarimg: faBarcode
+    zbarimg: faBarcode,
+    pdfinfo: faFilePdf,
+    qpdf: faFilePdf,
+    pdftotext: faFilePdf,
+    mutool: faFilePdf,
+    sonicvisualiser: faWaveSquare,
+    csound: faWrench,
+    ffprobe: faFileAudio
 }
 
 export default function ToolAccordion({ tool, results, onRun }: Props) {
@@ -44,7 +50,7 @@ export default function ToolAccordion({ tool, results, onRun }: Props) {
         try {
             await sendCommand(Commands.OpenInstallTerminal, { toolName: tool.name })
             toast.success('Opening a terminal... Enter your password there, not in this app.')
-        } catch (err) {
+        } catch(err) {
             toast.error(err instanceof Error ? err.message : 'Could not open a terminal.')
         }
     }
@@ -53,7 +59,7 @@ export default function ToolAccordion({ tool, results, onRun }: Props) {
         <button
             onClick={() => {
                 setOpen(!open)
-                if (!hasRun) onRun()
+                if(!hasRun) onRun()
             }}
             className="w-full flex flex-row items-center gap-3 cursor-pointer px-4 py-2.5 bg-bg-light hover:bg-border/30 transition text-left">
                 <FontAwesomeIcon icon={icon} className={`w-4 text-sm shrink-0 transition ${open ? 'text-primary' : 'text-muted'}`} />
@@ -74,7 +80,7 @@ export default function ToolAccordion({ tool, results, onRun }: Props) {
                             <FontAwesomeIcon icon={faTriangleExclamation} className="text-xs" />
                             Tool unavailable
                         </span>
-                        <p className="text-xs text-text/80 whitespace-pre-wrap leading-relaxed">{r.content}</p>
+                        <p className="text-xs text-text/80 whitespace-pre-wrap select-text leading-relaxed">{r.content}</p>
                         <button
                             onClick={HandleOpenInstallTerminal}
                             className="self-start flex items-center gap-2 text-xs font-medium text-primary hover:text-text transition cursor-pointer"
@@ -84,7 +90,7 @@ export default function ToolAccordion({ tool, results, onRun }: Props) {
                         </button>
                     </div>
                     : <div key={i} className="relative group">
-                        <pre className="whitespace-pre-wrap break-all font-mono text-xs leading-relaxed text-text/90 bg-bg-light/60 rounded-lg p-3 pr-9 max-h-72 overflow-y-auto">{r.content}</pre>
+                        <pre className="whitespace-pre-wrap break-all font-mono text-xs leading-relaxed select-text text-text/90 bg-bg-light/60 rounded-lg p-3 pr-9 max-h-72 overflow-y-auto">{r.content}</pre>
                         {!!r.content && <button
                             onClick={() => handleCopy(r.content!)}
                             title="Copy output"

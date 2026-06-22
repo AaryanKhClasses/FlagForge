@@ -25,6 +25,10 @@ public partial class MainWindow : Window
         IndentSize = 4,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
+    private static readonly string[] nonBase64Formats = new[]
+    {
+        ".c", ".cpp", ".py", ".js", ".java", ".html", ".css", ".json", ".txt", ".ts", ".md"
+    };
 
     public MainWindow()
     {
@@ -711,10 +715,6 @@ public partial class MainWindow : Window
 
         var attachmentBytes = File.ReadAllBytes(attachmentPath);
         var attachmentBase64 = Convert.ToBase64String(attachmentBytes);
-        var nonBase64Formats = new[]
-        {
-            ".c", ".cpp", ".py", ".js", ".java", ".html", ".css", ".json", ".txt", ".ts", ".md"
-        };
         var attachment = nonBase64Formats.Contains(Path.GetExtension(name).ToLowerInvariant())
             ? File.ReadAllText(attachmentPath)
             : attachmentBase64;
@@ -768,10 +768,6 @@ public partial class MainWindow : Window
         var challengePath = Path.GetDirectoryName(challengeFilePath)!;
         var attachmentPath = Path.Combine(challengePath, name);
 
-        var nonBase64Formats = new[]
-        {
-            ".c", ".cpp", ".py", ".js", ".java", ".html", ".css", ".json", ".txt", ".ts", ".md"
-        };
         if (!nonBase64Formats.Contains(Path.GetExtension(name).ToLowerInvariant()))
         {
             var bytes = Convert.FromBase64String(content);
