@@ -927,6 +927,7 @@ public partial class MainWindow : Window
             SendMessage(new
             {
                 type = "executeToolResult",
+                toolName = toolName,
                 data = results.Select(r => new
                 {
                     type = r.Type,

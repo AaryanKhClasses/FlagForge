@@ -82,3 +82,8 @@
 .mdxeditor-popup-container {
     display: none;
 }
+
+.overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+}

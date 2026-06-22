@@ -33,7 +33,7 @@ const TOOL_ICONS: Record<string, IconDefinition> = {
     sonicvisualiser: faWaveSquare,
     csound: faWrench,
     ffprobe: faFileAudio
-}
+} as const
 
 export default function ToolAccordion({ tool, results, onRun }: Props) {
     const [open, setOpen] = useState(false)

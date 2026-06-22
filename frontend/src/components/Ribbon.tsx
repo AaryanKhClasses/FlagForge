@@ -83,9 +83,14 @@ export default function Ribbon() {
     }
 
     return <div className="top-0 sticky flex flex-row justify-between items-center bg-bg-light border-b border-border z-50">
-        <div onClick={() => navigate('/')} className="flex flex-row items-center gap-2 px-4 py-1 cursor-pointer shrink-0">
-            <img src="/favicon.ico" alt="FlagForge Logo" className="w-8 h-8" />
-            <h1 className="tracking-wider font-bold">FlagForge</h1>
+        <div className="flex flex-row items-center gap-2 shrink-0">
+            <div onClick={() => navigate('/')} className="flex flex-row items-center gap-2 px-4 py-1 cursor-pointer">
+                <img src="/favicon.ico" alt="FlagForge Logo" className="w-8 h-8" />
+                <h1 className="tracking-wider font-bold">FlagForge</h1>
+            </div>
+            <button onClick={() => navigate('/converter')} className="px-3 py-1 cursor-pointer text-sm font-medium hover:bg-border/30 transition">
+                Converter
+            </button>
         </div>
 
         {isWorkspace && <div className="flex-1 max-w-md mx-4 relative" ref={containerRef}>

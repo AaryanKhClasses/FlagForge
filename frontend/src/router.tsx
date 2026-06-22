@@ -2,6 +2,7 @@ import { createHashRouter } from 'react-router-dom'
 import RootLayout from './root'
 import Launcher from './routes/launcher'
 import Workspace from './routes/workspace'
+import Converter from './routes/converter'
 
 export const router = createHashRouter([
     {
@@ -9,7 +10,8 @@ export const router = createHashRouter([
         element: <RootLayout />,
         children: [
             { index: true, element: <Launcher /> },
-            { path: '/workspace', element: <Workspace /> }
+            { path: '/workspace', element: <Workspace /> },
+            { path: '/converter', element: <Converter /> }
         ]
     }
 ])

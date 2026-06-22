@@ -21,7 +21,7 @@ const CTF_DEFAULT_TAGS = [
     'misc', 'osint', 'steganography', 'network', 'binary exploitation',
     'hardware', 'blockchain', 'mobile', 'radio', 'sql injection',
     'xss', 'rop', 'ppc', 'trivia', 're'
-]
+] as const
 
 type AttachmentData = {
     name: string
