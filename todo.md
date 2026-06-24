@@ -10,3 +10,15 @@
 | Tool name | Purpose |
 |-|-|
 | pdfimages | embeded image extraction |
+
+## CONVERTER TOOLS:
+- From/To Base32, Base45, Base58, Base62, Base85, Base91
+- Encrypt/Decrypt with DES, TDES, RC2, RC4, SM4, ROT13/47/Custom, XOR, Vigenere, Atbash, Affine, Morse, Bacon, Bifid, Rail Fence, A1Z26, CS2, Citrix
+- Bcrypt, Scrypt, JWT Sign/Decode/Verify
+- Psuedo-Random Number Generator
+- Public Keys
+- Arithmetic & Logic
+- Hashing
+
+## DOCUMENTATION:
+- Lots of MD Files To Add
