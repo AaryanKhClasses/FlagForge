@@ -83,6 +83,34 @@
     display: none;
 }
 
+.cm-editor {
+    background-color: var(--color-bg-light);
+    color: var(--color-text);
+}
+
+._codeMirrorToolbar_f3hmk_408 {
+    background-color: var(--color-bg-light) !important;
+}
+
+._selectTrigger_f3hmk_308 {
+    background-color: var(--color-bg-light) !important;
+    color: var(--color-text) !important;
+}
+
+._codeMirrorWrapper_f3hmk_391 {
+    border: 1px solid var(--color-border) !important;
+    margin-top: 0.5rem !important;
+}
+
+.cm-gutters {
+    background-color: var(--color-bg-light) !important;
+    color: var(--color-muted) !important;
+}
+
+.cm-activeLineGutter {
+    background-color: var(--color-bg-light) !important;
+}
+
 .overflow-y-auto {
     scrollbar-width: thin;
     scrollbar-color: var(--color-border) transparent;

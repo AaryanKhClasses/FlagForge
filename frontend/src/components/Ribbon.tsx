@@ -91,6 +91,9 @@ export default function Ribbon() {
             <button onClick={() => navigate('/converter')} className="px-3 py-1 cursor-pointer text-sm font-medium hover:bg-border/30 transition">
                 Converter
             </button>
+            <button onClick={() => navigate('/documentation')} className="px-3 py-1 cursor-pointer text-sm font-medium hover:bg-border/30 transition">
+                Documentation
+            </button>
         </div>
 
         {isWorkspace && <div className="flex-1 max-w-md mx-4 relative" ref={containerRef}>

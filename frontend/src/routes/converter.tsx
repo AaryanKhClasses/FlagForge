@@ -2,8 +2,8 @@ import { faArrowRightLong, faBroom, faCircleExclamation, faCopy, faEraser, faGri
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import type { ToolDefinition } from '../utils/types'
 import { TOOLS } from '../utils/tools/_index'
+import type { ToolDefinition } from '../utils/types'
 
 type Step = {
     id: string

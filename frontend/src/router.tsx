@@ -3,6 +3,7 @@ import RootLayout from './root'
 import Launcher from './routes/launcher'
 import Workspace from './routes/workspace'
 import Converter from './routes/converter'
+import Documentation from './routes/documentation'
 
 export const router = createHashRouter([
     {
@@ -11,7 +12,8 @@ export const router = createHashRouter([
         children: [
             { index: true, element: <Launcher /> },
             { path: '/workspace', element: <Workspace /> },
-            { path: '/converter', element: <Converter /> }
+            { path: '/converter', element: <Converter /> },
+            { path: '/documentation', element: <Documentation /> }
         ]
     }
 ])

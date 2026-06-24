@@ -1,6 +1,6 @@
 import { faDownload, faFile, faFileCirclePlus, faFilter, faInfoCircle, faMagnifyingGlass, faPen, faPlus, faSpinner, faTag, faTrash, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { BlockTypeSelect, BoldItalicUnderlineToggles, headingsPlugin, linkPlugin, listsPlugin, ListsToggle, markdownShortcutPlugin, MDXEditor, quotePlugin, toolbarPlugin, UndoRedo } from '@mdxeditor/editor'
+import { BlockTypeSelect, BoldItalicUnderlineToggles, codeBlockPlugin, codeMirrorPlugin, headingsPlugin, linkPlugin, listsPlugin, ListsToggle, markdownShortcutPlugin, MDXEditor, quotePlugin, toolbarPlugin, UndoRedo } from '@mdxeditor/editor'
 import '@mdxeditor/editor/style.css'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -29,6 +29,30 @@ type AttachmentData = {
     type: string
     mimeType: string
 }
+
+const mdPlugins = [
+    headingsPlugin(),
+    listsPlugin(),
+    quotePlugin(),
+    linkPlugin(),
+    markdownShortcutPlugin(),
+    codeBlockPlugin({ defaultCodeBlockLanguage: 'text' }),
+    codeMirrorPlugin({
+        codeBlockLanguages: {
+            text: 'Text',
+            bash: 'Bash',
+            python: 'Python'
+        }
+    }),
+    toolbarPlugin({
+        toolbarContents: () => <>
+            <UndoRedo />
+            <BoldItalicUnderlineToggles />
+            <ListsToggle />
+            <BlockTypeSelect />
+        </>
+    })
+]
 
 export default function Workspace() {
     const navigate = useNavigate()
@@ -98,17 +122,6 @@ export default function Workspace() {
         setDraggedId(null)
         setDragOverId(null)
     }
- 
-    const mdPlugins = [
-        headingsPlugin(), listsPlugin(), quotePlugin(), linkPlugin(), markdownShortcutPlugin(), toolbarPlugin({
-            toolbarContents: () => <>
-                <UndoRedo />
-                <BoldItalicUnderlineToggles />
-                <ListsToggle />
-                <BlockTypeSelect />
-            </>
-        })
-    ]
 
     const challenges = workspaceStore.challenges
     const activeChallenge = workspaceStore.activeChallenge
