@@ -1,6 +1,6 @@
 import { faBook } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { codeBlockPlugin, codeMirrorPlugin, headingsPlugin, linkPlugin, listsPlugin, MDXEditor, quotePlugin } from '@mdxeditor/editor'
+import { codeBlockPlugin, codeMirrorPlugin, headingsPlugin, linkPlugin, listsPlugin, MDXEditor, quotePlugin, thematicBreakPlugin } from '@mdxeditor/editor'
 import { useState } from 'react'
 
 const files = import.meta.glob('/docs/**/*.md', {
@@ -14,6 +14,7 @@ const mdPlugins = [
     listsPlugin(),
     quotePlugin(),
     linkPlugin(),
+    thematicBreakPlugin(),
     codeBlockPlugin({ defaultCodeBlockLanguage: 'text' }),
     codeMirrorPlugin({
         codeBlockLanguages: {
@@ -57,8 +58,10 @@ export default function Documentation() {
         }
     })
 
-    const currentDoc = documents.find(doc => doc.path === selectedDoc)?.content ?? '# Welcome to FlagForge Documentation'
-    console.log(documents)
+    const indexDoc = documents.find(doc => doc.path === '/docs/index.md')
+    const filteredDocuments = documents.filter(doc => doc.path !== '/docs/index.md')
+
+    const currentDoc = filteredDocuments.find(doc => doc.path === selectedDoc)?.content ?? indexDoc?.content ?? 'No document selected.'
 
     return <div className="min-h-[calc(100vh-3rem)] flex">
         <aside className="flex flex-col gap-2 w-[20vw] bg-bg-light border-r border-border p-6 max-h-[calc(100vh-3rem)]">
@@ -68,11 +71,11 @@ export default function Documentation() {
             </h1>
             <hr className="my-2 border-border" />
             <div className="flex flex-col gap-2">
-                {Array.from(new Set(documents.map(doc => doc.category))).map(category => (
+                {Array.from(new Set(filteredDocuments.map(doc => doc.category))).map(category => (
                     <div key={category} className="flex flex-col gap-2">
                         <h2 className="font-semibold text-sm uppercase tracking-wider text-muted">{category}</h2>
                         <div className="flex flex-col gap-2">
-                            {documents.filter(doc => doc.category === category).map(doc => (
+                            {filteredDocuments.filter(doc => doc.category === category).map(doc => (
                                 <button
                                     key={doc.path}
                                     onClick={() => setSelectedDoc(doc.path)}

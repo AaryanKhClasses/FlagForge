@@ -21,7 +21,7 @@ To fix: qpdf, mutool
 
 - Set Operations, Arithmetic Operations, Logic Operations, Statistics Operations (Mean, Median, Mode, Variance, Standard Deviation, etc.), Shift Operations
 
-- Hashing: MD2, MD4, MD5, MD6, SHA0, SHA1, SHA2, SHA3, SM3, Shake, etc
+- Hashing: MD2, MD4, MD6, SHA0, SHA3, SM3, Shake, etc
 
 ## DOCUMENTATION:
 - Lots of MD Files To Add

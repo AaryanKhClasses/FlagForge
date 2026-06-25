@@ -36,6 +36,10 @@
     padding-left: 1.5em;
 }
 
+._contentEditable_f3hmk_379 li {
+    margin: 0.1em 0;
+}
+
 ._contentEditable_f3hmk_379 h1 {
     font-size: 2em;
     font-weight: bold;
@@ -70,6 +74,16 @@
     color: var(--color-primary);
     text-decoration: underline;
     cursor: pointer;
+}
+
+._contentEditable_f3hmk_379 hr {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 1em 0;
+}
+
+._contentEditable_f3hmk_379 p {
+    margin: 0.5em 0;
 }
 
 ._contentEditable_f3hmk_379 code, ._code_6j9u9_52 {

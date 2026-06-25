@@ -1,6 +1,6 @@
 import { faBoxOpen, faFile, faFolder, faFolderTree, faSpinner, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { codeBlockPlugin, codeMirrorPlugin, headingsPlugin, linkPlugin, listsPlugin, MDXEditor, quotePlugin } from '@mdxeditor/editor'
+import { codeBlockPlugin, codeMirrorPlugin, headingsPlugin, linkPlugin, listsPlugin, MDXEditor, quotePlugin, thematicBreakPlugin } from '@mdxeditor/editor'
 import { Editor } from '@monaco-editor/react'
 import JSZip from 'jszip'
 import { useEffect, useState } from 'react'
@@ -25,6 +25,7 @@ const mdPlugins = [
     listsPlugin(),
     quotePlugin(),
     linkPlugin(),
+    thematicBreakPlugin(),
     codeBlockPlugin({ defaultCodeBlockLanguage: 'text' }),
     codeMirrorPlugin({
         codeBlockLanguages: {
