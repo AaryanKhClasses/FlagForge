@@ -65,7 +65,7 @@ export default function Documentation() {
     const currentDoc = filteredDocuments.find(doc => doc.path === selectedDoc)?.content ?? indexDoc?.content ?? 'No document selected.'
 
     return <div className="min-h-[calc(100vh-3rem)] flex">
-        <aside className="flex flex-col gap-2 w-[20vw] bg-bg-light border-r border-border p-6 max-h-[calc(100vh-3rem)]">
+        <aside className="flex flex-col gap-2 w-[20vw] bg-bg-light border-r border-border p-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
             <h1 className="font-semibold uppercase tracking-wider flex items-center gap-2">
                 <FontAwesomeIcon icon={faBook} className="text-muted text-sm" />
                 Documentation

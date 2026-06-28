@@ -57,6 +57,6 @@ Megapixels                      : 0.090
 This output shows various metadata fields extracted from the image file, including the file name, size, modification date, image dimensions, and a comment that contains a flag in this case.
 
 ## More Information
-For more information about the `exiftool` command, you can refer to its official documentation [here](https://exiftool.org/).
+For more information about the `exiftool` command, you can refer to its official documentation <a href="https://exiftool.org/" target="_blank">here</a>.
 
 Happy hacking!

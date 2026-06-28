@@ -141,7 +141,7 @@ Community contributions are always welcome.
 
 You can contribute by raising issues, submitting pull requests, or suggesting new features. If you have an idea for a new tool or improvement, please open an issue to discuss it with the community.
 
-Link to the GitHub repository: [AaryanKhClasses/FlagForge](https://github.com/AaryanKhClasses/FlagForge)
+Link to the GitHub repository: <a href="https://github.com/AaryanKhClasses/FlagForge" target="_blank">AaryanKhClasses/FlagForge</a>
 
 ---
 

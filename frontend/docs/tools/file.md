@@ -37,6 +37,6 @@ Notice how the output provides information about the file type as JPEG, instead 
 ---
 
 ## More Information
-For more information about the `file` command, you can refer to its manual page [here](https://www.man7.org/linux/man-pages/man1/file.1.html).
+For more information about the `file` command, you can refer to its manual page <a href="https://www.man7.org/linux/man-pages/man1/file.1.html" target="_blank">here</a>.
 
 Happy hacking!

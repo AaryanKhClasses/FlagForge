@@ -42,6 +42,6 @@ Notice how the output provides information about the file type as JPEG, along wi
 ---
 
 ## More Information
-For more information about the `binwalk` tool, you can refer to its official documentation [here](https://linuxcommandlibrary.com/man/binwalk)
+For more information about the `binwalk` tool, you can refer to its official documentation <a href="https://linuxcommandlibrary.com/man/binwalk" target="_blank">here</a>
 
 Happy hacking!
