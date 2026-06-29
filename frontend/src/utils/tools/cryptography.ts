@@ -5,6 +5,7 @@ import bacon from 'bacon-cipher'
 import { Substitution } from 'cipherjs'
 import * as forge from 'node-forge'
 import { sm4 } from 'sm-crypto'
+import bcrypt from 'bcryptjs'
 
 const OPTIONS: any[] = [
     { key: 'key', label: 'Key', type: 'text', default: '' },
@@ -730,6 +731,34 @@ export const CRYPTOGRAPHY_TOOLS: ToolDefinition[] = [
         ],
         execute: (input, options) => {
             return options.mode === 'Decode' ? ctx1Decode(input) : ctx1Encode(input)
+        }
+    },
+    {
+        id: 'bcrypt',
+        name: 'Bcrypt',
+        description: 'Hash a password using Bcrypt',
+        category: 'Cryptography',
+        icon: faLock,
+        options: [
+            { key: 'rounds', label: 'Rounds', type: 'number', default: 12 }
+        ],
+        execute: (input, options) => {
+            const rounds = options?.rounds || 12
+            return bcrypt.hashSync(input, rounds)
+        }
+    },
+    {
+        id: 'bcrypt-verify',
+        name: 'Bcrypt Verify',
+        description: 'Verify a password against a Bcrypt hash',
+        category: 'Cryptography',
+        icon: faLockOpen,
+        options: [
+            { key: 'hash', label: 'Hash', type: 'text', default: '' }
+        ],
+        execute: (input, options) => {
+            const hash = options?.hash || ''
+            return bcrypt.compareSync(input, hash).toString()
         }
     }
 ] as const

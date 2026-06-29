@@ -83,6 +83,17 @@ export default function Converter() {
     const toolMap = useMemo(() => Object.fromEntries(TOOLS.map(t => [t.id, t])), [])
     const filteredTools = useMemo(() => TOOLS.filter(t => t.name.toLowerCase().includes(search.toLowerCase()) || t.description.toLowerCase().includes(search.toLowerCase())), [search])
 
+    const groupedTools = useMemo(() => {
+        return filteredTools.reduce((acc, tool) => {
+            const category = tool.category || 'Others'
+            if(!acc[category]) acc[category] = []
+            acc[category].push(tool)
+            return acc
+        }, {} as Record<string, ToolDefinition[]>)
+    }, [filteredTools])
+
+    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => new Set(Object.keys(groupedTools)))
+
     const handleCopyOutput = async() => {
         if(!output.value) return
         await navigator.clipboard.writeText(output.value)
@@ -165,22 +176,43 @@ export default function Converter() {
             </div>
             <hr className="my-2 border-border" />
             <div className="flex flex-col gap-2 overflow-y-auto">
-                {filteredTools.length === 0
+                {Object.keys(groupedTools).length === 0
                     ? <p className="text-sm text-muted text-center py-4">No tools match &ldquo;{search}&rdquo;</p>
-                    : filteredTools.map(tool => <button
-                        draggable
-                        onDragStart={e => e.dataTransfer.setData('tool-id', tool.id)}
-                        onClick={() => addStep(tool)}
-                        key={tool.id}
-                        className="flex items-start gap-3 text-left p-3 rounded-xl bg-bg border border-border hover:border-primary/40 hover:bg-border/20 cursor-grab active:cursor-grabbing transition"
-                    >
-                        <FontAwesomeIcon icon={tool.icon} className="text-primary text-sm mt-1 shrink-0" />
-                        <span className="flex flex-col gap-0.5 min-w-0">
-                            <span className="font-medium leading-tight">{tool.name}</span>
-                            <span className="text-xs text-muted leading-tight">{tool.description}</span>
-                        </span>
-                    </button>
-                )}
+                    : Object.entries(groupedTools).map(([category, tools]) => 
+                        <div key={category} className="flex flex-col gap-2">
+                            <button
+                                onClick={() => setExpandedCategories(prev => {
+                                    const newSet = new Set(prev)
+                                    if(newSet.has(category)) newSet.delete(category)
+                                    else newSet.add(category)
+                                    return newSet
+                                })}
+                                className="flex items-center justify-between p-3 rounded-xl bg-bg border border-border cursor-pointer hover:border-primary/40 hover:bg-border/20 transition"
+                            >
+                                <span className="font-medium leading-tight">{category}</span>
+                                <FontAwesomeIcon
+                                    icon={faChevronDown}
+                                    className={`text-muted text-xs transition-transform ${expandedCategories.has(category) ? 'rotate-180' : ''}`}
+                                />
+                            </button>
+                            {expandedCategories.has(category) && <div className="flex flex-col gap-2 pl-4">
+                                {tools.map(tool => <button
+                                    draggable
+                                    onDragStart={e => e.dataTransfer.setData('tool-id', tool.id)}
+                                    onClick={() => addStep(tool)}
+                                    key={tool.id}
+                                    className="flex items-start gap-3 text-left p-3 rounded-xl bg-bg border border-border hover:border-primary/40 hover:bg-border/20 cursor-grab active:cursor-grabbing transition"
+                                >
+                                    <FontAwesomeIcon icon={tool.icon} className="text-primary text-sm mt-1 shrink-0" />
+                                    <span className="flex flex-col gap-0.5 min-w-0">
+                                        <span className="font-medium leading-tight">{tool.name}</span>
+                                        <span className="text-xs text-muted leading-tight">{tool.description}</span>
+                                    </span>
+                                </button>)}
+                            </div>}
+                        </div>
+                    )
+                }
             </div>
         </aside>
 

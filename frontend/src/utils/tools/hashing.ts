@@ -6,6 +6,7 @@ export const HASHING_TOOLS: ToolDefinition[] = [
     {
         id: 'md5',
         name: 'MD5 Hash',
+        category: 'Hashing',
         description: 'Generate MD5 hash of a given input string.',
         icon: faHashtag,
         execute: input => CryptoJS.MD5(input).toString()
@@ -13,6 +14,7 @@ export const HASHING_TOOLS: ToolDefinition[] = [
     {
         id: 'sha1',
         name: 'SHA-1 Hash',
+        category: 'Hashing',
         description: 'Generate SHA-1 hash of a given input string.',
         icon: faHashtag,
         execute: input => CryptoJS.SHA1(input).toString()
@@ -20,6 +22,7 @@ export const HASHING_TOOLS: ToolDefinition[] = [
     {
         id: 'sha2',
         name: 'SHA-2 Hash',
+        category: 'Hashing',
         description: 'Generate SHA-2 hash of a given input string.',
         icon: faHashtag,
         options: [
@@ -38,6 +41,7 @@ export const HASHING_TOOLS: ToolDefinition[] = [
     {
         id: 'keccak',
         name: 'Keccak[c=2d] Hash',
+        category: 'Hashing',
         description: 'Generate Keccak[c=2d] hash of a given input string.',
         icon: faHashtag,
         options: [
@@ -51,6 +55,7 @@ export const HASHING_TOOLS: ToolDefinition[] = [
     {
         id: 'ripemd160',
         name: 'RIPEMD-160 Hash',
+        category: 'Hashing',
         description: 'Generate RIPEMD-160 hash of a given input string.',
         icon: faHashtag,
         execute: input => CryptoJS.RIPEMD160(input).toString()

@@ -38,7 +38,7 @@ export type ToolDefinition = {
     id: string
     name: string
     description: string
-    category?: 'Data Conversion' | 'Cryptography' | 'Others'
+    category?: 'Data Conversion' | 'Cryptography' | 'Hashing' | 'Others'
     icon: IconDefinition
     defaultOptions?: Record<string, any>
     options?: ToolOption[]

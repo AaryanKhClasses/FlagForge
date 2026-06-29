@@ -12,14 +12,12 @@ To add: pdfimages
 To fix: qpdf, mutool
 
 ## CONVERTER TOOLS:
-- Bcrypt, Scrypt, JWT Sign/Decode/Verify
+- JWT Sign/Decode/Verify
 - Psuedo-Random Number Generator
 
 - Parse X.509, Parse ASN.1, Parse SSH
 - Convert HEX <-> PEM <-> Object Identifier
 - Encrypt/Decrypt/Verify/Sign PGP, RSA
-
-- Set Operations, Arithmetic Operations, Logic Operations, Statistics Operations (Mean, Median, Mode, Variance, Standard Deviation, etc.), Shift Operations
 
 - Hashing: MD2, MD4, MD6, SHA0, SHA3, SM3, Shake, etc
 

@@ -547,5 +547,35 @@ export const DATA_CONVERSION_TOOLS: ToolDefinition[] = [
             }
             return new TextDecoder().decode(new Uint8Array(output))
         }
+    },
+    {
+        id: 'hex-to-pem',
+        name: 'Convert Hex to PEM',
+        description: 'Convert hexadecimal data to PEM format',
+        category: 'Data Conversion',
+        icon: faLock,
+        options: [
+            { key: 'header', label: 'Header String', type: 'text', default: 'CERTIFICATE' }
+        ],
+        execute: (input, options) => {
+            const header = options.header ?? 'CERTIFICATE'
+            if(typeof header !== 'string' || !header.trim()) throw new Error('Header must be a non-empty string')
+            const bytes = new Uint8Array(input.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || [])
+            const base64 = btoa(String.fromCharCode(...bytes))
+            const pem = `-----BEGIN ${header}-----\n${base64.match(/.{1,64}/g)?.join('\n') ?? ''}\n-----END ${header}-----`
+            return pem
+        }
+    },
+    {
+        id: 'pem-to-hex',
+        name: 'Convert PEM to Hex',
+        description: 'Convert PEM format data to hexadecimal',
+        category: 'Data Conversion',
+        icon: faLockOpen,
+        execute: input => {
+            const base64 = input.replace(/-----BEGIN [^-]+-----|-----END [^-]+-----|\s+/g, '')
+            const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
+            return Array.from(bytes).map(byte => byte.toString(16).padStart(2, '0')).join('')
+        }
     }
 ] as const
